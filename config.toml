@@ -1,0 +1,33 @@
+theme = "DeepThought"
+title = "sarah's blog"
+
+# The URL the site will be built for
+base_url = "https://sarah-ek.veganb.tw"
+
+# Whether to automatically compile all Sass files in the sass directory
+compile_sass = true
+
+# Whether to build a search index to be used later on by a JavaScript library
+build_search_index = true
+
+[markdown]
+# Whether to do syntax highlighting
+# Theme can be customised by setting the `highlight_theme` variable to a theme supported by Zola
+highlight_code = true
+
+[extra]
+navbar_items = [
+ { code = "en", nav_items = [
+  { url = "$BASE_URL/", name = "home" },
+  { url = "$BASE_URL/blog", name = "blog" },
+ ]},
+]
+katex.enabled = true
+katex.auto_render = true
+
+author.name = "sarah-ek"
+author.avatar = "images/avatar.png"
+
+[extra.social]
+email = "sarah@veganb.tw"
+github = "sarah-ek"
