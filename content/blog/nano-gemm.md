@@ -102,7 +102,7 @@ when we call the top level kernel, it passes the microkernel function pointers t
 once a kernel is computed, we can reuse it for future matrix multiply calls with the same dimensions to amortize the cost of constructing it (which is still rather low, on the order of 10-20 nanoseconds).
 
 #### benchmarks
-we compare our implementation against that of other libraries, such as faer, nalgebra, ndarray (using intel mkl as a backend), eigen and libxsmm.
+we compare our implementation ([nano-gemm](https://github.com/sarah-ek/nano-gemm)) against that of other libraries, such as faer, nalgebra, ndarray (using intel mkl as a backend), eigen and libxsmm.
 
 we obtain the following results on an i5-11400 @2.6ghz:
 

@@ -123,7 +123,7 @@ sarah&#x27;s blog | writing the fastest* tiny matmul in rust
   <span class="icon">
     <i class="fas fa-pencil-alt"></i>
   </span>
-  <span>1380 words</span>
+  <span>1388 words</span>
 </span>
 
             </div>
@@ -206,7 +206,7 @@ so we write a bunch of millikernels that take the microkernels as function point
 when we call the top level kernel, it passes the microkernel function pointers to the millikernel, which in turn calls those function pointers.</p>
 <p>once a kernel is computed, we can reuse it for future matrix multiply calls with the same dimensions to amortize the cost of constructing it (which is still rather low, on the order of 10-20 nanoseconds).</p>
 <h4 id="benchmarks">benchmarks</h4>
-<p>we compare our implementation against that of other libraries, such as faer, nalgebra, ndarray (using intel mkl as a backend), eigen and libxsmm.</p>
+<p>we compare our implementation (<a href="https://github.com/sarah-ek/nano-gemm">nano-gemm</a>) against that of other libraries, such as faer, nalgebra, ndarray (using intel mkl as a backend), eigen and libxsmm.</p>
 <p>we obtain the following results on an i5-11400 @2.6ghz:</p>
 <p align="center">
   <img src="../nano-gemm-square.png" width="60%" alt="benchmark plot"><br>
