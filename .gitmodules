@@ -1,6 +1,0 @@
-[submodule "themes/anemone"]
-	path = themes/anemone
-	url = https://github.com/Speyll/anemone
-[submodule "themes/DeepThought"]
-	path = themes/DeepThought
-	url = https://github.com/RatanShreshtha/DeepThought
