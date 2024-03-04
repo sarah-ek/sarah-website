@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1" name="viewport" />
+  <meta content="#ffffff" name="theme-color" />
+  <meta content="#da532c" name="msapplication-TileColor" />
+
+  
+  
+  
+  
+  
+
+  
+
+  
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1.9.1/css/academicons.min.css" integrity="sha384-FIue+PI4SsI9XfHCz8dBLg33b0c1fMJgNU3X//L26FYbGnlSEfWmNT7zgWc2N9b6" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css" integrity="sha256-AbA177XfpSnFEvgpYu1jMygiLabzPCJCRIBtR5jGc0k=" crossorigin="anonymous">
+  <link href="https://sarah-ek.veganb.tw/deep-thought.css" rel="stylesheet" />
+  
+  
+
+  <title>
+    
+sarah&#x27;s blog | writing the fastest* tiny matmul in rust
+
+  </title>
+
+  
+  
+  
+
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.css" integrity="sha384-R4558gYOUz8mP9YWpZJjofhk+zx0AS11p36HnD2ZKj/6JR5z27gSSULCNHIRReVs" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/katex.min.js" integrity="sha384-z1fJDqw8ZApjGO3/unPWUPsIymfsJmyrDVWC8Tv/a1HeOtGmkwNd/7xUS0Xcnvsx" crossorigin="anonymous"></script>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/mathtex-script-type.min.js" integrity="sha384-jiBVvJ8NGGj5n7kJaiWwWp9AjC+Yh8rhZY3GtAX8yU28azcLgoRo4oukO87g7zDT" crossorigin="anonymous"></script>
+  
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.15.1/dist/contrib/auto-render.min.js" integrity="sha384-+XBljXPPiv+OzfbB3cVmLHf4hdUFHlWNZN5spNQ7rmHTXpd7WvJum6fIACpNNfIR" crossorigin="anonymous"></script>
+  
+  
+</head>
+
+<body class="has-background-white">
+  <nav aria-label="section navigation" class="navbar is-light" role="navigation">
+    <div class="container">
+      <div class="navbar-brand">
+        <a class="navbar-item is-size-5 has-text-weight-bold" href="https:&#x2F;&#x2F;sarah-ek.veganb.tw">sarah&#x27;s blog</a>
+        <a aria-expanded="false" aria-label="menu" class="navbar-burger burger" data-target="navMenu" role="button">
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+      <div class="navbar-menu" id="navMenu">
+        <div class="navbar-end has-text-centered">
+          
+          
+          
+          <a class="navbar-item has-text-weight-semibold" href="https:&#x2F;&#x2F;sarah-ek.veganb.tw&#x2F;">
+            home
+          </a>
+          
+          <a class="navbar-item has-text-weight-semibold" href="https:&#x2F;&#x2F;sarah-ek.veganb.tw&#x2F;blog">
+            blog
+          </a>
+          
+          
+          
+          <a class="navbar-item" id="nav-search" title="Search" data-target="#search-modal">
+            <span class="icon">
+              <i class="fas fa-search"></i>
+            </span>
+          </a>
+          <a class="navbar-item" id="dark-mode" title="Switch to dark theme">
+            <span class="icon">
+              <i class="fas fa-adjust"></i>
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  
+  
+
+  
+<section class="section">
+  <div class="container">
+    <div class="columns">
+      <div class="column is-8 is-offset-2">
+        <article class="box">
+          <h1 class="title">
+            writing the fastest* tiny matmul in rust
+          </h1>
+          <p class="subtitle"></p>
+          <div class="columns is-multiline is-gapless">
+            <div class="column is-8">
+              
+<span class="icon-text has-text-grey">
+  <span class="icon">
+    <i class="fas fa-user"></i>
+  </span>
+  <span>sarah-ek published on</span>
+  <span class="icon">
+    <i class="far fa-calendar-alt"></i>
+  </span>
+  <span><time datetime="2024-03-04">March 04, 2024</time></span>
+</span>
+
+            </div>
+            <div class="column is-4 has-text-right-desktop">
+              
+<span class="icon-text has-text-grey">
+  <span class="icon">
+    <i class="far fa-clock"></i>
+  </span>
+  <span>7 min,</span>
+  <span class="icon">
+    <i class="fas fa-pencil-alt"></i>
+  </span>
+  <span>1380 words</span>
+</span>
+
+            </div>
+            <div class="column">
+              
+            </div>
+            <div class="column has-text-right-desktop">
+              
+            </div>
+          </div>
+          <div class="content mt-2">
+            <p>prerequisites: basic familiarity with linear algebra</p>
+<p>(*) almost always the fastest when the size is only known at runtime... and only on <code>x86</code>/<code>x86_64</code>. but hey! this works for most people.</p>
+<h4 id="what-is-matrix-multiplication-and-why-should-we-care">what is matrix multiplication and why should we care?</h4>
+<p>in the context of programming, a matrix can be essentially thought of as a 2d array.
+it usually contains numerical entries that can be added and multiplied, among other interesting operations.</p>
+<p>multiplying two matrices $A$ and $B$ is an operation that takes a row from $A$, multiplies it elementwise by a column from $B$, then accumulates the sum into the output matrix.</p>
+<p align="center">
+  <img src="../nano-gemm-matmul.png" width="40%" alt="drawing showing how matrix multiplication combines its two operands"><br>
+</p>
+<p>matrix multiplication is used for all sorts of applications, from robotics to machine learning to physics simulations.
+in some of these applications, the matrices we multiply are small. even worse, sometimes the sizes aren't known at compile-time,
+which means we can't just generate a bunch of nice unrolled loops and call it a day, if we want a fast implementation, that is.</p>
+<h4 id="optimizing-tiny-matrix-multiplication">optimizing tiny matrix multiplication</h4>
+<p>one of the things that make matrix multiplication fun to optimize is the reusability of data.
+in the example above, we extract a row from $A$ and a column from $B$ and combine them to get a single element of $C$ (the output matrix).
+one thing we can do to avoid loading the same data multiple times, is using a given row as many times as possible before we load the next row.
+a way to do this would be loading a row from $A$, two columns from $B$, and computing the two products in parallel to get us two elements of $C$.</p>
+<p align="center">
+  <img src="../nano-gemm-matmul1x2.png" width="40%" alt="we load one row from the left hand side, and two columns from the right hand side, combining the results into two elements of the output"><br>
+</p>
+<p>we can keep scaling this up further by loading several rows from $A$ as well.</p>
+<p align="center">
+  <img src="../nano-gemm-matmul2x2.png" width="40%" alt="this time we load two rows from A, and two columns from B, allowing us to compute a 2-by-2 block of the output."><br>
+</p>
+<p>so what's stopping us from expanding forever until we load both matrices entirely?</p>
+<p>the answer is the number of cpu registers at the lowest level, and the cache size at higher levels.
+the cache size isn't relevant for tiny matrices, so we'll just focus on the register count.</p>
+<p><code>x86_64</code> exposes 16 simd registers if you have the avx instruction set, which hopefully most people do nowadays.
+if you have avx512, then you get double that amount, 32 simd registers.
+a simd (single instruction, multiple data) register is what we'll be storing our data in right before the cpu uses it for computations.</p>
+<p>although one thing to note is that each simd register can hold multiple floating point values (<code>f64x4</code> with avx), which is something we'll make good use of.</p>
+<p>assuming the matrix $A$ is stored in column major order, our implementation will look like this:</p>
+<ul>
+<li>load <code>MR</code> vector registers from the <code>k</code>th columns of $A$, starting at the <code>i</code>th row.</li>
+<li>broadcast <code>NR</code> vector registers from the <code>k</code>th row of $B$, starting <code>j</code>th column.</li>
+<li>multiply each $A$ vector by each $B$ vector and add them to the corresponding accumulator register (we'll have <code>MR * NR</code> accumulators in total).</li>
+<li><code>k &lt;- k + 1</code> and repeat until there are no more columns from $A$/rows from $B$.</li>
+</ul>
+<p align="center">
+  <img src="../nano-gemm-matmul-kernel.png" width="40%" alt="a single iteration of the algorithm described above."><br>
+</p>
+<p>this represents a single iteration of our innermost kernel.
+so how do we choose <code>MR</code> and <code>NR</code>?</p>
+<p>basically we choose large enough values to use up our registers as much as we can.
+we need <code>MR * NR</code> accumulators, <code>MR</code> temporaries for $A$, and <code>NR</code> temporaries for $B$.</p>
+<p>if we rearrange things a little then we only need a single temporary register for $B$, so we do that.
+this means we need <code>MR * NR + MR + 1</code> registers. if we pick <code>MR = 3</code>, <code>NR = 4</code>, then that gives us 16, which is exactly the number of registers we have access to.</p>
+<p>well, not quite. because we're loading entire registers directly from $A$, we need to handle the case where the number of rows isn't a multiple of the register size.</p>
+<p>to get around that i decided to use masked loads and stores.
+these require an additional register to store the mask, but allow us to perform partial loads and stores so we don't read (or write to the output) outside the bounds of the matrix.
+this means we can only go up to <code>MR = 2</code>, <code>NR = 4</code>. but that's good enough and doesn't seem to adversely affect performance.</p>
+<p>we also want kernels that process blocks with <code>MR = 1, NR = 1</code>, <code>MR = 2, NR = 1</code>, <code>MR = 1, NR = 2</code>, and so on to avoid wasting computations.</p>
+<p>we can implement heavily optimized versions of those microkernels, each with a fixed number of iterations (up to a certain point where we just switch to a dynamic loop) to avoid the loop overhead.
+then the only thing left is to combine them in a way that lets us compute the full matrix multiply.</p>
+<p>so for a matrix multiply with $(m, n, k) = (11, 6, 4)$, where $A$ is $m \times k$, $B$ is $k \times n$ and $C$ is $m \times n$,
+and assuming a register size of 4, we can use:</p>
+<ul>
+<li>a microkernel of size $(4 \times 2, 4, 4)$ for the top left corner,</li>
+<li>a microkernel of size $(4 \times 2, 2, 4)$ for the top right corner,</li>
+<li>a microkernel of size $(4 \times 1\ (\text{mask size} = 3), 4, 4)$ for the bottom left corner,</li>
+<li>a microkernel of size $(4 \times 1\ (\text{mask size} = 3), 2, 4)$ for the bottom right corner.</li>
+</ul>
+<p>there's one issue though, the matrix dimensions and kernel sizes are only known at runtime.
+so we write a bunch of millikernels that take the microkernels as function pointers and execute them.</p>
+<p>the primary millikernel uses the largest kernel size until we reach the tail of the output matrix (either rows or columns), then we switch to smaller kernels to avoid going out of bounds.</p>
+<p>the other millikernels are variants of the primary one. we have unrolled versions for $1 \times 1$ microkernel calls, $1 \times 2$, $2 \times 1$ and $2 \times 2$.</p>
+<p>then we have a millikernel that handles the edge case where $A$ or $C$ isn't column major, where we first copy them to temporary column major matrices, perform the computation using the primary kernel then copy the result back to the output matrix.</p>
+<p>the millikernel is also stored as a function pointer when we compile our top-level kernel (along with other metadata such as <code>MR</code>, <code>NR</code>, the size of a simd register, the simd mask, etc.).
+when we call the top level kernel, it passes the microkernel function pointers to the millikernel, which in turn calls those function pointers.</p>
+<p>once a kernel is computed, we can reuse it for future matrix multiply calls with the same dimensions to amortize the cost of constructing it (which is still rather low, on the order of 10-20 nanoseconds).</p>
+<h4 id="benchmarks">benchmarks</h4>
+<p>we compare our implementation against that of other libraries, such as faer, nalgebra, ndarray (using intel mkl as a backend), eigen and libxsmm.</p>
+<p>we obtain the following results on an i5-11400 @2.6ghz:</p>
+<p align="center">
+  <img src="../nano-gemm-square.png" width="60%" alt="benchmark plot"><br>
+  square ($m = n = k$) matrix multiply (higher is better)
+</p>
+<p align="center">
+  <img src="../nano-gemm-wide.png" width="60%" alt="benchmark plot"><br>
+  wide ($m = 4, k = 4, n = \text{size}$) matrix multiply (higher is better)
+</p>
+<p align="center">
+  <img src="../nano-gemm-tall.png" width="60%" alt="benchmark plot"><br>
+  tall ($n = 4, k = 4, m = \text{size}$) matrix multiply (higher is better)
+</p>
+<p>the code is available on <a href="https://github.com/sarah-ek/nano-gemm">github</a> along with the benchmarks, and will be published into a proper crate once i finish cleaning it up.</p>
+
+          </div>
+        </article>
+      </div>
+      
+    </div>
+  </div>
+</section>
+
+
+  
+  <section class="modal" id="search-modal">
+    <div class="modal-background"></div>
+    <div class="modal-card">
+      <header class="modal-card-head">
+        <p class="modal-card-title">Search</p>
+      </header>
+      <section class="modal-card-body">
+        <div class="field mb-2">
+          <div class="control">
+            <input class="input" id="search" placeholder="Search this website." type="search" />
+          </div>
+        </div>
+        <div class="search-results">
+          <div class="search-results__items"></div>
+        </div>
+      </section>
+    </div>
+    <button aria-label="close" class="modal-close is-large"></button>
+  </section>
+  
+
+
+  
+
+
+
+  
+
+
+
+  
+  <footer class="footer py-4">
+    <div class="content has-text-centered">
+      <p>
+        Built with
+        <span class="icon-text">
+          <span class="icon">
+            <i class="fas fa-code"></i>
+          </span>
+          <span>code</span>
+        </span>
+        and
+        <span class="icon-text">
+          <span class="icon">
+            <i class="fas fa-heart"></i>
+          </span>
+          <span>love</span>
+        </span>
+      </p>
+      <p>
+        Powered by
+        <span class="icon-text">
+          <span class="icon">
+            <i class="fas fa-power-off"></i>
+          </span>
+          <span>zola</span>
+        </span>
+      </p>
+    </div>
+  </footer>
+  
+
+  
+  
+  
+  
+  <script src="https://sarah-ek.veganb.tw/elasticlunr.min.js"></script>
+  <script src="https://sarah-ek.veganb.tw/search_index.en.js"></script><script src="https://sarah-ek.veganb.tw/js/site.js"></script>
+
+  
+
+
+
+
+
+  
+  
+</body>
+
+</html>

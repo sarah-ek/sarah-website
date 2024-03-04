@@ -121,3 +121,4 @@ we obtain the following results on an i5-11400 @2.6ghz:
   tall ($n = 4, k = 4, m = \text{size}$) matrix multiply (higher is better)
 </p>
 
+the code is available on [github](https://github.com/sarah-ek/nano-gemm) along with the benchmarks, and will be published into a proper crate once i finish cleaning it up.
