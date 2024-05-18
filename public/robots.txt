@@ -1,2 +1,0 @@
-User-agent: *
-Sitemap: https://sarah-ek.veganb.tw/sitemap.xml

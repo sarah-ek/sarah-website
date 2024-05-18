@@ -8,6 +8,9 @@
   <meta content="width=device-width, initial-scale=1" name="viewport" />
   <meta content="#ffffff" name="theme-color" />
   <meta content="#da532c" name="msapplication-TileColor" />
+  {% block rss %}
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="{{ get_url(path="rss.xml", trailing_slash=false) }}">
+  {% endblock %}
 
   {% if config.extra.favicon.webmanifest %}
   <link href='{{ config.extra.favicon.webmanifest }}' rel="manifest" />
